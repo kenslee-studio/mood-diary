@@ -8,15 +8,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.WindowCompat
 import androidx.navigation.compose.rememberNavController
 import `in`.kenslee.MultiModuleDiary.navigation.Screen
 import `in`.kenslee.MultiModuleDiary.navigation.SetupNavGraph
 import `in`.kenslee.MultiModuleDiary.ui.theme.MultiModuleDiaryTheme
+import `in`.kenslee.MultiModuleDiary.utils.Constants.APP_ID
+import io.realm.kotlin.mongodb.App
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
         super.onCreate(savedInstanceState)
+        installSplashScreen()
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             MultiModuleDiaryTheme {
                 Surface(
@@ -24,9 +28,18 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    SetupNavGraph(startDestination = Screen.Authentication.route, navController = navController )
+                    SetupNavGraph(startDestination = getStartDestination(), navController = navController )
                 }
             }
         }
     }
+
+}
+
+private fun getStartDestination() : String{
+    val user = App.create(APP_ID).currentUser
+    return if(user != null && user.loggedIn)
+        Screen.Home.route
+    else
+        Screen.Authentication.route
 }

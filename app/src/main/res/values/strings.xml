@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Multi Module Diary</string>
+    <string name="auth_welcome">Welcome back</string>
+    <string name="auth_please">Please sign in to continue.</string>
 </resources>
