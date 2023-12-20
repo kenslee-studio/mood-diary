@@ -6,6 +6,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun DisplayAlertDialog(
@@ -20,15 +21,15 @@ fun DisplayAlertDialog(
             title = {
                 Text(
                     text = title,
-                    fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                    fontWeight = MaterialTheme.typography.bodyLarge.fontWeight,
+                    fontSize = MaterialTheme.typography.titleMedium.fontSize,
+                    fontWeight = MaterialTheme.typography.titleMedium.fontWeight,
                 )
             },
             text = {
                 Text(
                     text = message,
-                    fontSize = MaterialTheme.typography.bodyMedium.fontSize,
-                    fontWeight = MaterialTheme.typography.bodyMedium.fontWeight,
+                    fontSize = MaterialTheme.typography.titleSmall.fontSize,
+                    fontWeight = MaterialTheme.typography.titleSmall.fontWeight,
                 )
             },
             onDismissRequest = closeDialog,
@@ -49,4 +50,16 @@ fun DisplayAlertDialog(
             }
         )
     }
+}
+
+@Preview
+@Composable
+fun DisplayAlertDialogPreview(){
+    DisplayAlertDialog(
+        title = "Material Dialog" ,
+        message = "Do you really want to use material dialog?",
+        dialogOpened = true,
+        closeDialog = {},
+        onYesClicked = {}
+    )
 }

@@ -18,8 +18,11 @@ import io.realm.kotlin.mongodb.App
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        var keepSplash = true
         super.onCreate(savedInstanceState)
-        installSplashScreen()
+        installSplashScreen().setKeepOnScreenCondition{
+            keepSplash
+        }
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             MultiModuleDiaryTheme {
@@ -28,7 +31,11 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    SetupNavGraph(startDestination = getStartDestination(), navController = navController )
+                    SetupNavGraph(
+                        startDestination = getStartDestination(),
+                        navController = navController,
+                        onDataLoaded = {keepSplash = false}
+                    )
                 }
             }
         }
