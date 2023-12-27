@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,17 +33,21 @@ import androidx.compose.ui.unit.dp
 import `in`.kenslee.MultiModuleDiary.R
 import `in`.kenslee.MultiModuleDiary.data.repository.Diaries
 import `in`.kenslee.MultiModuleDiary.utils.RequestState
+import java.time.ZonedDateTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun HomeScreen(
+    dateIsSelected: Boolean,
+    onDateSelected: (ZonedDateTime) -> Unit,
+    onDateReset: () -> Unit,
     diaries : Diaries,
     onMenuClicked: () -> Unit,
-    onFilterClicked: () -> Unit,
     navigateToWrite: () -> Unit,
     drawerState: DrawerState,
     onSignOutClicked: () -> Unit,
+    onDeleteAllClicked: () -> Unit,
     navigateToWriteWithArgs: (String) ->Unit
     ) {
 
@@ -50,7 +55,8 @@ fun HomeScreen(
 
     NavigationDrawer(
         drawerState = drawerState,
-        onSignOutClicked = onSignOutClicked
+        onSignOutClicked = onSignOutClicked,
+        onDeleteAllClicked = onDeleteAllClicked
     ) {
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -58,7 +64,9 @@ fun HomeScreen(
                 HomeTopBar(
                     scrollBehavior = scrollBehavior,
                     onMenuClicked = onMenuClicked,
-                    onFilterClicked = onFilterClicked
+                    dateIsSelected = dateIsSelected,
+                    onDateSelected = onDateSelected,
+                    onDateReset = onDateReset
                 )
             },
             floatingActionButton = {
@@ -102,6 +110,7 @@ fun HomeScreen(
 fun NavigationDrawer(
     drawerState: DrawerState,
     onSignOutClicked : () -> Unit,
+    onDeleteAllClicked: () -> Unit,
     content : @Composable () -> Unit
 ) {
     ModalNavigationDrawer(
@@ -137,6 +146,26 @@ fun NavigationDrawer(
                     },
                     selected = false,
                     onClick = onSignOutClicked
+                ) 
+                NavigationDrawerItem(
+                    label= {
+                       Row (
+                           modifier = Modifier.padding(12.dp)
+                       ){
+                           Icon(
+                               imageVector = Icons.Default.Delete ,
+                               contentDescription = "delete icon",
+                           )
+                           Spacer(
+                               modifier = Modifier.width(12.dp)
+                           )
+                           Text(
+                              text = "Delete all diaries"
+                           )
+                       }
+                    },
+                    selected = false,
+                    onClick = onDeleteAllClicked
                 )
             }
         },

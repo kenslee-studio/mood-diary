@@ -10,13 +10,17 @@ import io.realm.kotlin.log.LogLevel
 import io.realm.kotlin.mongodb.App
 import io.realm.kotlin.mongodb.sync.SyncConfiguration
 import io.realm.kotlin.query.Sort
+import io.realm.kotlin.types.RealmInstant
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.mongodb.kbson.ObjectId
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
 
 object MongoDb : MongoRepository {
     private val app = App.create(APP_ID)
@@ -26,6 +30,7 @@ object MongoDb : MongoRepository {
     init {
         configureTheRealm()
     }
+
     override fun configureTheRealm() {
         user?.let {
             val config = SyncConfiguration.Builder(
@@ -55,8 +60,15 @@ object MongoDb : MongoRepository {
                     "myApp",
                     "userid = ${user.id}"
                 )
-                realm.query(clazz = Diary::class, query = "ownerId == $0", user.id)
-                    .sort(property = "date", sortOrder = Sort.DESCENDING)
+                realm.query(
+                    clazz = Diary::class,
+                    query = "ownerId == $0",
+                    user.id
+                )
+                    .sort(
+                        property = "date",
+                        sortOrder = Sort.DESCENDING
+                    )
                     .asFlow()
                     .map { result ->
                         Log.d(
@@ -78,19 +90,23 @@ object MongoDb : MongoRepository {
         } ?: flow { emit(RequestState.Error(UserNotAuthenticatedException())) }
     }
 
-    override suspend fun getSelectedDiary(diaryId: ObjectId) = withContext(Dispatchers.IO){
-         user?.let{
+    override suspend fun getSelectedDiary(diaryId: ObjectId) = withContext(Dispatchers.IO) {
+        user?.let {
             try {
-                val diary = realm.query(Diary::class , "_id == $0" , diaryId).find().first()
+                val diary = realm.query(
+                    Diary::class,
+                    "_id == $0",
+                    diaryId
+                ).find().first()
                 RequestState.Success(diary)
-            }catch (e : Exception){
+            } catch (e: Exception) {
                 RequestState.Error(e)
             }
         } ?: RequestState.Error(UserNotAuthenticatedException())
     }
 
-    override suspend fun addNewDiary(diary: Diary)= withContext(Dispatchers.IO){
-        user?.let{
+    override suspend fun addNewDiary(diary: Diary) = withContext(Dispatchers.IO) {
+        user?.let {
             realm.write {
                 try {
                     val addDiary = copyToRealm(
@@ -99,17 +115,21 @@ object MongoDb : MongoRepository {
                         }
                     )
                     RequestState.Success(data = addDiary)
-                }catch (e : Exception){
+                } catch (e: Exception) {
                     RequestState.Error(e)
                 }
             }
         } ?: RequestState.Error(UserNotAuthenticatedException())
     }
 
-    override suspend fun updateDiary(diary: Diary)= withContext(Dispatchers.IO){
-        user?.let{
+    override suspend fun updateDiary(diary: Diary) = withContext(Dispatchers.IO) {
+        user?.let {
             realm.write {
-                val queriedDiary = query( Diary::class , query = "_id == $0", diary._id).first().find()
+                val queriedDiary = query(
+                    Diary::class,
+                    query = "_id == $0",
+                    diary._id
+                ).first().find()
                 queriedDiary?.let {
                     it.mood = diary.mood
                     it.date = diary.date
@@ -119,24 +139,69 @@ object MongoDb : MongoRepository {
 
                     RequestState.Success(data = queriedDiary)
 
-                } ?:  RequestState.Error(Exception("Diary doesn't exist"))
+                } ?: RequestState.Error(Exception("Diary doesn't exist"))
             }
         } ?: RequestState.Error(UserNotAuthenticatedException())
     }
 
-    override suspend fun deleteDiary(id: ObjectId) = withContext(Dispatchers.IO){
-        user?.let{user ->
+    override suspend fun deleteDiary(id: ObjectId) = withContext(Dispatchers.IO) {
+        user?.let { user ->
             realm.write {
-                val queriedDiary = query( Diary::class , query = "_id == $0 && ownerId == $1", id , user.id).first().find()
-                queriedDiary?.let{
+                val queriedDiary = query(
+                    Diary::class,
+                    query = "_id == $0 && ownerId == $1",
+                    id,
+                    user.id
+                ).first().find()
+                queriedDiary?.let {
 
                     delete(queriedDiary)
                     RequestState.Success(data = queriedDiary)
 
-                } ?:  RequestState.Error(Exception("Diary doesn't exist"))
+                } ?: RequestState.Error(Exception("Diary doesn't exist"))
             }
         } ?: RequestState.Error(UserNotAuthenticatedException())
     }
+
+    override suspend fun deleteAllDiaries() = withContext(Dispatchers.IO) {
+        user?.let { user ->
+            realm.write {
+                val queriedDiary = query(
+                    Diary::class,
+                    query = "ownerId == $0",
+                    user.id
+                ).find()
+                delete(queriedDiary)
+                RequestState.Success(data = true)
+            }
+        }
+    } ?: RequestState.Error(UserNotAuthenticatedException())
+
+    override fun getFilteredDiaries(zonedDateTime: ZonedDateTime) : Flow<Diaries> {
+        return user?.let {
+            try {
+                val dateBeforeSetDate = RealmInstant.from(LocalDateTime.of(zonedDateTime.toLocalDate().plusDays(1) , LocalTime.MIDNIGHT).toEpochSecond(zonedDateTime.offset), 0)
+                val dateAfterSetDate = RealmInstant.from(LocalDateTime.of(zonedDateTime.toLocalDate() , LocalTime.MIDNIGHT).toEpochSecond(zonedDateTime.offset) , 0)
+                realm.query(clazz = Diary::class, query = "ownerId == $0 && date < $1 AND date > $2", user.id , dateAfterSetDate , dateBeforeSetDate )
+                    .sort(property = "date", sortOrder = Sort.DESCENDING)
+                    .asFlow()
+                    .map { result ->
+                        RequestState.Success(
+                            data = result.list.groupBy {
+                                it.date
+                                    .toInstant()
+                                    .atZone(ZoneId.systemDefault())
+                                    .toLocalDate()
+                            }
+                        )
+                    }
+
+            } catch (e: Exception) {
+                flow { emit(RequestState.Error(e)) }
+            }
+        } ?: flow { emit(RequestState.Error(UserNotAuthenticatedException())) }
+    }
+
 }
 
 private class UserNotAuthenticatedException : Exception("User is not logged in.")
