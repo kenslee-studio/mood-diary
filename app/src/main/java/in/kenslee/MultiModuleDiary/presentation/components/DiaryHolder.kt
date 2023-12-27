@@ -1,5 +1,7 @@
 package `in`.kenslee.MultiModuleDiary.presentation.components
 
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -23,7 +25,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import `in`.kenslee.MultiModuleDiary.model.Diary
 import `in`.kenslee.MultiModuleDiary.model.Mood
 import `in`.kenslee.MultiModuleDiary.utils.Elevation
+import `in`.kenslee.MultiModuleDiary.utils.fetchImagesFromFirebase
 import `in`.kenslee.MultiModuleDiary.utils.toInstant
 import io.realm.kotlin.ext.realmListOf
 import java.text.SimpleDateFormat
@@ -51,9 +57,36 @@ fun DiaryHolder(
     diary: Diary,
     onClick: (String) -> Unit
 ) {
+    val context = LocalContext.current
     val localDensity = LocalDensity.current
     var componentHeight by remember { mutableStateOf(0.dp) }
     var galleryOpened by remember { mutableStateOf(false) }
+    var galleryLoading by remember { mutableStateOf(false) }
+    val downloadImages = remember{mutableStateListOf<Uri>()}
+
+    LaunchedEffect(
+        key1 = galleryOpened,
+        block = {
+            if(galleryOpened && downloadImages.isEmpty()){
+                galleryLoading = true
+                fetchImagesFromFirebase(
+                    remoteImagePaths = diary.images,
+                    onImageDownload = {image ->
+                       downloadImages.add(image)
+                    },
+                    onImageDownloadFailed = {
+                        Toast.makeText(context, "Images not downloading, try again sometime later.", Toast.LENGTH_SHORT).show()
+                        galleryLoading = false
+                        galleryOpened = false
+                    },
+                    onReadyToDisplay = {
+                        galleryLoading = false
+                        galleryOpened = true
+                    }
+                )
+            }
+        }
+    )
 
     Row(
         modifier = Modifier
@@ -62,7 +95,7 @@ fun DiaryHolder(
                 interactionSource = remember {
                     MutableInteractionSource()
                 },
-                onClick = { onClick(diary._id.toString()) }
+                onClick = { onClick(diary._id.toHexString())}
             )
     ) {
         Spacer(modifier = Modifier.width(14.dp))
@@ -102,6 +135,7 @@ fun DiaryHolder(
                 if (diary.images.isNotEmpty()) {
                     ShowGalleryButton(
                         galleryOpened = galleryOpened,
+                        galleryLoading = galleryLoading,
                         onClick = { galleryOpened = !galleryOpened }
                     )
                 }
@@ -115,7 +149,7 @@ fun DiaryHolder(
                         )
                     )
                 ) {
-                    Gallery(images = diary.images)
+                    Gallery(images = downloadImages)
                 }
             }
         }
@@ -125,11 +159,20 @@ fun DiaryHolder(
 @Composable
 fun ShowGalleryButton(
     galleryOpened: Boolean,
+    galleryLoading: Boolean,
     onClick: () -> Unit
 ) {
     TextButton(onClick = onClick) {
         Text(
-            text = if (galleryOpened) "Hide Gallery" else "Show Gallery",
+            text =
+            if (galleryOpened)
+                if(galleryLoading)
+                    "Loading"
+                else
+                    "Hide Gallery"
+            else
+                "Show Gallery"
+            ,
             fontSize = MaterialTheme.typography.bodySmall.fontSize
         )
     }

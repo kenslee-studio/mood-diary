@@ -19,6 +19,7 @@ fun HomeTopBar(
     scrollBehavior: TopAppBarScrollBehavior
 ) {
     TopAppBar(
+        scrollBehavior = scrollBehavior,
         navigationIcon = {
             IconButton(onClick = onMenuClicked) {
                 Icon(

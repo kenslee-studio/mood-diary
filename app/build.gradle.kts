@@ -5,7 +5,7 @@ plugins {
     id ("com.google.devtools.ksp")
     id ("dagger.hilt.android.plugin")
     id ("io.realm.kotlin")
-    //id ("com.google.gms.google-services")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -56,7 +56,11 @@ android {
 }
 
 dependencies {
+    implementation("com.google.firebase:firebase-storage-ktx:20.3.0")
     val composeVersion = "1.4.6"
+
+    implementation("com.google.firebase:firebase-auth:22.3.0")
+    implementation("com.google.firebase:firebase-auth-ktx:22.3.0")
 
     implementation ("androidx.core:core-ktx:1.12.0")
     implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
@@ -74,9 +78,6 @@ dependencies {
     // Compose Navigation
     implementation ("androidx.navigation:navigation-compose:2.7.3")
 
-    /*// Firebase
-    implementation( "com.google.firebase:firebase-auth-ktx:22.1.2")
-    implementation ("com.google.firebase:firebase-storage-ktx:20.2.1")*/
 
     // Room components
     implementation ("androidx.room:room-runtime:2.5.2")
@@ -100,9 +101,6 @@ dependencies {
 
     // Coil
     implementation ("io.coil-kt:coil-compose:2.3.0")
-
-    // Pager - Accompanist [DEPRECATED]
-//    implementation "com.google.accompanist:accompanist-pager:0.27.0"
 
     // Date-Time Picker
     implementation ("com.maxkeppeler.sheets-compose-dialogs:core:1.0.2")

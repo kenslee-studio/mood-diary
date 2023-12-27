@@ -1,14 +1,20 @@
 package `in`.kenslee.MultiModuleDiary.navigation
 
+import android.widget.Toast
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -18,14 +24,19 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.stevdzasan.messagebar.rememberMessageBarState
 import com.stevdzasan.onetap.rememberOneTapSignInState
+import `in`.kenslee.MultiModuleDiary.model.GalleryImage
+import `in`.kenslee.MultiModuleDiary.model.Mood
 import `in`.kenslee.MultiModuleDiary.presentation.components.DisplayAlertDialog
 import `in`.kenslee.MultiModuleDiary.presentation.screen.auth.AuthenticationScreen
 import `in`.kenslee.MultiModuleDiary.presentation.screen.auth.AuthenticationViewModel
 import `in`.kenslee.MultiModuleDiary.presentation.screen.home.HomeScreen
 import `in`.kenslee.MultiModuleDiary.presentation.screen.home.HomeViewModel
+import `in`.kenslee.MultiModuleDiary.presentation.screen.write.WriteScreen
+import `in`.kenslee.MultiModuleDiary.presentation.screen.write.WriteViewModel
 import `in`.kenslee.MultiModuleDiary.utils.Constants.APP_ID
 import `in`.kenslee.MultiModuleDiary.utils.Constants.WRITE_SCREEN_ARGUMENT_KEY
 import `in`.kenslee.MultiModuleDiary.utils.RequestState
+import `in`.kenslee.MultiModuleDiary.utils.toEnum
 import io.realm.kotlin.mongodb.App
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -36,9 +47,12 @@ import java.lang.Exception
 fun SetupNavGraph(
     startDestination: String,
     navController: NavHostController,
-    onDataLoaded: () -> Unit) {
-    NavHost(navController = navController,
-        startDestination = startDestination) {
+    onDataLoaded: () -> Unit
+) {
+    NavHost(
+        navController = navController,
+        startDestination = startDestination
+    ) {
         authenticationRoute(
             navigateToHome = {
             navController.popBackStack()
@@ -53,9 +67,16 @@ fun SetupNavGraph(
                navController.popBackStack()
                 navController.navigate(Screen.Authentication.route)
            },
-            onDataLoaded = onDataLoaded
+            onDataLoaded = onDataLoaded,
+            navigateToWriteWithArgs = {diaryId ->
+                navController.navigate(Screen.Write.passDiaryId(diaryId = diaryId))
+            }
         )
-        writeRoute()
+        writeRoute(
+            onBackPressed = {
+                navController.popBackStack()
+            }
+        )
     }
 }
 
@@ -85,7 +106,7 @@ fun NavGraphBuilder.authenticationRoute(
                 messageBarState.addError(Exception(it))
                 viewModel.setLoading(false)
             },
-            onTokenReceived = {tokenId ->
+            onSuccessfulFirebaseAuthentication = { tokenId ->
                 viewModel.signInWithMongoAtlas(
                     tokenId,
                     onSuccess = {isLoggedIn ->
@@ -100,6 +121,10 @@ fun NavGraphBuilder.authenticationRoute(
                         viewModel.setLoading(false)
                     }
                 )
+            },
+            onFailureFirebaseAuthentication = {message ->
+                messageBarState.addError(Exception(message))
+                viewModel.setLoading(false)
             }
         )
     }
@@ -109,6 +134,7 @@ fun NavGraphBuilder.homeRoute(
     navigateToWrite: () -> Unit,
     navigateToAuth: () -> Unit,
     onDataLoaded: () -> Unit,
+    navigateToWriteWithArgs: (String) -> Unit
     ){
     composable(route = Screen.Home.route){
         val viewModel : HomeViewModel = viewModel()
@@ -134,7 +160,8 @@ fun NavGraphBuilder.homeRoute(
             onFilterClicked = {},
             navigateToWrite = navigateToWrite,
             drawerState = drawerState,
-            onSignOutClicked = {signOutDialogOpened = true}
+            onSignOutClicked = {signOutDialogOpened = true},
+            navigateToWriteWithArgs = navigateToWriteWithArgs
         )
 
         DisplayAlertDialog(
@@ -154,13 +181,66 @@ fun NavGraphBuilder.homeRoute(
     }
 }
 
-fun NavGraphBuilder.writeRoute(){
-    composable(route = Screen.Write.route,
-               arguments = listOf(navArgument(name = WRITE_SCREEN_ARGUMENT_KEY){
-                   type = NavType.StringType
-                   nullable = true
-                   defaultValue = null
-               })
-        ){
+@OptIn(ExperimentalFoundationApi::class)
+fun NavGraphBuilder.writeRoute(onBackPressed: () -> Unit){
+    composable(
+        route = Screen.Write.route,
+        arguments = listOf(navArgument(name = WRITE_SCREEN_ARGUMENT_KEY){
+           type = NavType.StringType
+           nullable = true
+           defaultValue = null }
+        )
+    ){
+
+        val pagerState = rememberPagerState(pageCount = { Mood.values().size })
+        val pageNumber by remember { derivedStateOf { pagerState.currentPage } }
+        val viewModel: WriteViewModel = hiltViewModel()
+        val galleryState = viewModel.galleryState
+        val screenState = viewModel.screenState
+        val context = LocalContext.current
+
+        WriteScreen(
+            onBackPressed = onBackPressed,
+            onDeleteConfirm = {
+               viewModel.deleteDiary(
+                   onSuccess = {
+                       Toast.makeText(context, "Deleted successfully", Toast.LENGTH_SHORT).show()
+                       onBackPressed()
+                   },
+                   onError = {
+                       Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                   }
+               )
+            },
+            pagerState = pagerState,
+            screenState = screenState,
+            onDescriptionChanged = {viewModel.setDescription(it)},
+            onTitleChanged = {viewModel.setTitle(it)},
+            moodName = {Mood.values()[pageNumber].name},
+            onSaveClicked = {
+                viewModel.upsertDiary(
+                    diary = it.apply{mood = pageNumber.toEnum<Mood>().toString() },
+                    onSuccess = onBackPressed,
+                    onError = {
+                        Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                    }
+                )
+            },
+            onDateTimeUpdated = {zonedDateTime ->
+                viewModel.setDateTime(zonedDateTime)
+            },
+            galleryState = galleryState,
+            onAddClicked = {
+
+            },
+            onImageDeleteClicked = {imageToDelete ->
+                galleryState.removeImage(imageToDelete)
+            },
+            onImageSelect = {uri ->
+                val type = context.contentResolver.getType(uri)?.split("/")?.last() ?: "jpg"
+                val remotePath = viewModel.getRemotePath(uri , type)
+                galleryState.addImages(GalleryImage(uri , remotePath))
+            }
+        )
     }
 }

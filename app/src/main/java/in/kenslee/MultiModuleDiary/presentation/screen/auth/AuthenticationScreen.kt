@@ -8,6 +8,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 import com.stevdzasan.messagebar.ContentWithMessageBar
 import com.stevdzasan.messagebar.MessageBarState
 import com.stevdzasan.onetap.OneTapSignInState
@@ -21,7 +23,8 @@ fun AuthenticationScreen(
     messageBarState: MessageBarState,
     loadingState: Boolean,
     onClick: () -> Unit,
-    onTokenReceived:(String) -> Unit,
+    onSuccessfulFirebaseAuthentication:(String) -> Unit,
+    onFailureFirebaseAuthentication:(String)->Unit,
     onDialogDismissed:(String) -> Unit
 ) {
     Scaffold(
@@ -38,7 +41,13 @@ fun AuthenticationScreen(
         state = oneTapState,
         clientId = CLIENT_ID,
         onTokenIdReceived = { tokenId ->
-            onTokenReceived(tokenId)
+            val credentials = GoogleAuthProvider.getCredential(tokenId,null)
+            FirebaseAuth.getInstance().signInWithCredential(credentials)
+                .addOnSuccessListener {
+                    onSuccessfulFirebaseAuthentication(tokenId)
+                }.addOnFailureListener{
+                    onFailureFirebaseAuthentication(it.message ?: "Exception authenticating user")
+                }
         },
         onDialogDismissed = {message ->
             onDialogDismissed(message)
