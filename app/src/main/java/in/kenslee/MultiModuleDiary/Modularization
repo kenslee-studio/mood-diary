@@ -1,0 +1,29 @@
+                                   <<<<<<<<< MODULARIZATION>>>>>>>>
+*First of all benefits of modularization are only visible on large apps, with thousand lines of code.
+
+What is modularization?
+Modularization is a way of structuring app that makes app more manageable and scalable. In modularization , we break
+down our code into smaller parts called modules which are self contained and independent of each other as much as possible.
+
+What are benefits of modularization?
+Reus-ability -> same modules can be used in multiple projects as they are needed.
+Visibility Control -> Having modules gives you more control over the visibility of your classes and function
+                        you can mark them inner , so that they are scope limits to the module.
+Customizable delivery -> you can provide certain modules on demand when user needs it. helping to reduce download size.
+                        this feature can also be user to make different build flavors where some modules are only available
+                        with some flavors
+Ownership -> Module can be assigned to some maintainer where he can keep it bug free and updated.
+Encapsulation -> Module encapsulates the data that is module only. Which means it doesn't let outside classes to know what
+                happens inside the classes.
+Testability -> Testability improves because of the code can be run in isolation.
+Build time -> Build time improves significantly because of gradle incremental build , build caching and parallel build.
+
+Two things to keep in mind while dealing with modules are low coupling and more cohesion
+low coupling -> this means module should be independent of each other. In this way changes to one module have less or no
+                impact on another module. Modules shouldn't be aware of inner working of other modules.
+high cohesion -> Cohesion refers to how the elements of a module belong together. Related code should be close to each other
+                to make it highly cohesive.
+
+What is version catalog ?
+    -> It is file where all the dependencies are kept with there version number so that multiple modules can use it.
+     Version catalog acts as single source of truth for the dependencies around different modules.

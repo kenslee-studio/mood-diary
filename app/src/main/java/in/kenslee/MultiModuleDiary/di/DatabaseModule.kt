@@ -7,9 +7,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import `in`.kenslee.MultiModuleDiary.connectivity.NetworkConnectivityObserver
-import `in`.kenslee.MultiModuleDiary.data.database.ImagesDatabase
-import `in`.kenslee.MultiModuleDiary.utils.Constants.IMAGES_DATABASE
+import `in`.kenslee.utils.Constants.IMAGES_DATABASE
+import `in`.kenslee.utils.connectivity.NetworkConnectivityObserver
 import javax.inject.Singleton
 
 @Module
@@ -19,10 +18,10 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(
         @ApplicationContext context : Context
-    ): ImagesDatabase{
+    ): `in`.kenslee.mongo.database.ImagesDatabase {
         return Room.databaseBuilder(
             context = context,
-            klass = ImagesDatabase::class.java,
+            klass = `in`.kenslee.mongo.database.ImagesDatabase::class.java,
             name = IMAGES_DATABASE
         ).fallbackToDestructiveMigration()
             .build()
@@ -30,10 +29,10 @@ object DatabaseModule {
 
     @Singleton
     @Provides
-    fun provideFirstDao(database: ImagesDatabase) = database.imageToUploadDao()
+    fun provideFirstDao(database: `in`.kenslee.mongo.database.ImagesDatabase) = database.imageToUploadDao()
     @Singleton
     @Provides
-    fun provideSecondDao(database: ImagesDatabase) = database.imageToDeleteDao()
+    fun provideSecondDao(database: `in`.kenslee.mongo.database.ImagesDatabase) = database.imageToDeleteDao()
 
     @Singleton
     @Provides

@@ -10,12 +10,12 @@ plugins {
 
 android {
     namespace = "in.kenslee.MultiModuleDiary"
-    compileSdk = 34
+    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
         applicationId = "in.kenslee.MultiModuleDiary"
-        minSdk = 24
-        targetSdk = 34
+        minSdk = libs.versions.minSdk.get().toInt()
+        targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
 
@@ -37,7 +37,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
             jvmTarget = "17"
@@ -56,66 +55,46 @@ android {
 }
 
 dependencies {
-    implementation("com.google.firebase:firebase-storage-ktx:20.3.0")
-    val composeVersion = "1.4.6"
+    implementation(project(":core:ui"))
+    implementation(project(":core:utils"))
+    implementation(project(":data:mongo"))
+    implementation(project(":feature:auth"))
+    implementation(project(":feature:home"))
+    implementation(project(":feature:write"))
 
-    implementation("com.google.firebase:firebase-auth:22.3.0")
-    implementation("com.google.firebase:firebase-auth-ktx:22.3.0")
+    implementation(libs.firebase.storage)
+    implementation(libs.firebase.auth)
 
-    implementation ("androidx.core:core-ktx:1.12.0")
-    implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
-    implementation ("androidx.activity:activity-compose:1.7.2")
-    implementation ("androidx.compose.ui:ui:$composeVersion")
-    implementation ("androidx.compose.ui:ui-tooling-preview:$composeVersion")
-    implementation ("androidx.compose.material3:material3:1.2.0-alpha08")
-    testImplementation ("junit:junit:4.13.2")
-    androidTestImplementation ("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation ("androidx.test.espresso:espresso-core:3.5.1")
-    androidTestImplementation ("androidx.compose.ui:ui-test-junit4:1.5.1")
-    debugImplementation ("androidx.compose.ui:ui-tooling:$composeVersion")
-    debugImplementation ("androidx.compose.ui:ui-test-manifest:$composeVersion")
+    implementation (libs.core.ktx)
+    implementation (libs.lifecycle.runtime)
+    implementation (libs.activity.compose)
+    implementation (libs.compose.ui)
+    implementation (libs.compose.tooling.preview)
+    implementation (libs.material3.compose)
+    debugImplementation (libs.compose.ui.tooling)
+    debugImplementation (libs.compose.ui.test.manifest)
 
     // Compose Navigation
-    implementation ("androidx.navigation:navigation-compose:2.7.3")
+    implementation (libs.navigation.compose)
 
 
     // Room components
-    implementation ("androidx.room:room-runtime:2.5.2")
-    ksp ("androidx.room:room-compiler:2.5.2")
-    implementation( "androidx.room:room-ktx:2.5.2")
+    implementation (libs.room.runtime)
+    ksp (libs.room.compiler)
+    implementation( libs.room.ktx)
 
     // Runtime Compose
-    implementation ("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
+    implementation (libs.runtime.compose)
 
     // Splash API
-    implementation( "androidx.core:core-splashscreen:1.0.1")
+    implementation( libs.splash.api)
 
     // Mongo DB Realm
-    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
-    implementation( "io.realm.kotlin:library-sync:1.11.0")
+    implementation (libs.coroutines.core)
+    implementation( libs.realm.sync)
 
     // Dagger Hilt
-    implementation ("com.google.dagger:hilt-android:2.48")
-    ksp ("com.google.dagger:hilt-compiler:2.48")
-    implementation ("androidx.hilt:hilt-navigation-compose:1.0.0")
-
-    // Coil
-    implementation ("io.coil-kt:coil-compose:2.3.0")
-
-    // Date-Time Picker
-    implementation ("com.maxkeppeler.sheets-compose-dialogs:core:1.0.2")
-
-    // CALENDAR
-    implementation ("com.maxkeppeler.sheets-compose-dialogs:calendar:1.0.2")
-
-    // CLOCK
-    implementation ("com.maxkeppeler.sheets-compose-dialogs:clock:1.0.2")
-    // Message Bar Compose
-    implementation ("com.github.stevdza-san:MessageBarCompose:1.0.5")
-
-    // One-Tap Compose
-    implementation( "com.github.stevdza-san:OneTapCompose:1.0.7")
-
-    // Desugar JDK
-    coreLibraryDesugaring ("com.android.tools:desugar_jdk_libs:2.0.3")
+    implementation (libs.hilt.android)
+    ksp (libs.hilt.compiler)
+    implementation (libs.hilt.navigation.compose)
 }

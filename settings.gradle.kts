@@ -16,3 +16,9 @@ dependencyResolutionManagement {
 
 rootProject.name = "Multi Module Diary"
 include(":app")
+include(":core:ui")
+include(":core:utils")
+include(":data:mongo")
+include(":feature:auth")
+include(":feature:home")
+include(":feature:write")

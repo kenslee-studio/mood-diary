@@ -7,20 +7,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.FirebaseApp
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.ktx.storageMetadata
 import dagger.hilt.android.AndroidEntryPoint
-import `in`.kenslee.MultiModuleDiary.data.database.ImagesToDeleteDao
-import `in`.kenslee.MultiModuleDiary.data.database.ImagesToUploadDao
-import `in`.kenslee.MultiModuleDiary.navigation.Screen
+import `in`.kenslee.utils.Screen
 import `in`.kenslee.MultiModuleDiary.navigation.SetupNavGraph
-import `in`.kenslee.MultiModuleDiary.ui.theme.MultiModuleDiaryTheme
-import `in`.kenslee.MultiModuleDiary.utils.Constants.APP_ID
-import `in`.kenslee.MultiModuleDiary.utils.retryDeletingImageFromFirebase
-import `in`.kenslee.MultiModuleDiary.utils.retryUploadingImageToFirebase
+import `in`.kenslee.mongo.database.ImageToDelete
+import `in`.kenslee.mongo.database.ImageToUpload
+import `in`.kenslee.ui.theme.MultiModuleDiaryTheme
+import `in`.kenslee.utils.Constants.APP_ID
 import io.realm.kotlin.mongodb.App
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,9 +32,9 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
 
     @Inject
-    lateinit var imagesToUploadDao: ImagesToUploadDao
+    lateinit var imagesToUploadDao: `in`.kenslee.mongo.database.ImagesToUploadDao
     @Inject
-    lateinit var imagesToDeleteDao: ImagesToDeleteDao
+    lateinit var imagesToDeleteDao: `in`.kenslee.mongo.database.ImagesToDeleteDao
     override fun onCreate(savedInstanceState: Bundle?) {
         var keepSplash = true
         super.onCreate(savedInstanceState)
@@ -68,8 +69,8 @@ class MainActivity : ComponentActivity() {
 
 private fun cleanUpCheck(
     scope: CoroutineScope,
-    imagesToUploadDao: ImagesToUploadDao,
-    imagesToDeleteDao: ImagesToDeleteDao
+    imagesToUploadDao: `in`.kenslee.mongo.database.ImagesToUploadDao,
+    imagesToDeleteDao: `in`.kenslee.mongo.database.ImagesToDeleteDao
 ){
     scope.launch(Dispatchers.IO) {
         val result = imagesToUploadDao.getAllImages()
@@ -85,7 +86,7 @@ private fun cleanUpCheck(
         }
         val imagesToDelete = imagesToDeleteDao.getAllImages()
         imagesToDelete.forEach {
-            retryDeletingImageFromFirebase(it){
+            retryDeletingImageFromFirebase(it) {
                 scope.launch(Dispatchers.IO) {
                     imagesToDeleteDao.cleanUpImages(it.id)
                 }
@@ -93,6 +94,33 @@ private fun cleanUpCheck(
         }
     }
 }
+
+
+fun retryUploadingImageToFirebase(
+    imageToUpload: ImageToUpload,
+    onSuccess: () -> Unit
+){
+    val storage = FirebaseStorage.getInstance().reference
+    storage.child(imageToUpload.remotePath).putFile(
+        imageToUpload.imageUri.toUri(),
+        storageMetadata {  },
+        imageToUpload.sessionUri.toUri()
+    ).addOnSuccessListener {
+        onSuccess()
+    }
+}
+
+fun retryDeletingImageFromFirebase(
+    imageToDelete: ImageToDelete,
+    onSuccess: () -> Unit
+){
+    val storage = FirebaseStorage.getInstance().reference
+    storage.child(imageToDelete.remoteImagePath).delete()
+        .addOnSuccessListener {
+            onSuccess()
+        }
+}
+
 
 private fun getStartDestination() : String{
     val user = App.create(APP_ID).currentUser

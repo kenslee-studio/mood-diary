@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "516349886010",
+    "project_id": "diary-app-408416",
+    "storage_bucket": "diary-app-408416.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:516349886010:android:4c7e817b165fba85d0ff03",
+        "android_client_info": {
+          "package_name": "in.kenslee.MultiModuleDiary"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "516349886010-sjosqgi4mdba0tpoppmgdp74val8cm08.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCvuIBc6ksJnuqJlje5EbSxmyKs38OY3kQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "516349886010-c17gc119n2mj0virqb08nq6efif2p2kc.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
